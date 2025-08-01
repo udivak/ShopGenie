@@ -33,7 +33,9 @@ class MessageFormatter:
             # Add rating with stars
             if product.rating > 0:
                 stars = MessageFormatter._get_star_rating(product.rating)
-                message += f"⭐ *Rating:* {product.rating:.1f}/5 {stars}\n"
+                rating_text = f"{product.rating:.1f}/5"
+                escaped_rating = MessageFormatter._escape_markdown(rating_text)
+                message += f"⭐ *Rating:* {escaped_rating} {stars}\n"
             
             # Add sales count
             if product.sales > 0:
@@ -107,7 +109,7 @@ class MessageFormatter:
         """Format error messages."""
         if error_type == "network":
             message = "🌐 *Network Error*\n\n"
-            message += "Unable to connect to AliExpress\\. This could be due to:\n"
+            message += "Unable to connect to Amazon\\. This could be due to:\n"
             message += "• Temporary server issues\n"
             message += "• Network connectivity problems\n"
             message += "• Rate limiting\n\n"
@@ -132,7 +134,7 @@ class MessageFormatter:
         message = "🤖 *ShopGenie Bot Help*\n\n"
         message += "*How to use:*\n"
         message += "• Send me any product name to search\n"
-        message += "• I'll find the best 4 matches from AliExpress\n"
+        message += "• I'll find the best 4 matches from Amazon\n"
         message += "• Each result includes price, rating, and direct link\n\n"
         
         message += "*Examples:*\n"
@@ -152,7 +154,7 @@ class MessageFormatter:
     def format_start_message() -> str:
         """Format welcome/start message."""
         message = "🛍️ *Welcome to ShopGenie Bot\\!*\n\n"
-        message += "I help you find the best products on AliExpress\\.\n\n"
+        message += "I help you find the best products on Amazon\\.\n\n"
         message += "*Just send me:*\n"
         message += "• Any product name or description\n"
         message += "• I'll search and show you the top 4 results\n"

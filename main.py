@@ -1,7 +1,7 @@
 """
 ShopGenie Telegram Bot - Main Entry Point
 
-A Telegram bot that searches AliExpress for products and returns 
+A Telegram bot that searches Amazon for products and returns 
 the top 4 best-matched results with pricing, ratings, and direct links.
 """
 import sys
@@ -58,7 +58,7 @@ def main():
             logger.info("Bot created successfully")
             
             print("\n🤖 ShopGenie Bot is starting...")
-            print("📱 Ready to help users find products on AliExpress!")
+            print("📱 Ready to help users find products on Amazon!")
             print("🔄 Running in polling mode...")
             print("\nPress Ctrl+C to stop the bot\n")
             

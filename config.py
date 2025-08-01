@@ -26,9 +26,8 @@ class Config:
     USER_AGENT = os.getenv('USER_AGENT', 
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36')
     
-    # AliExpress Configuration
-    ALIEXPRESS_BASE_URL = 'https://www.aliexpress.com'
-    ALIEXPRESS_SEARCH_URL = 'https://www.aliexpress.com/wholesale'
+    # Amazon Configuration (for reference - not used by scraper)
+    # Amazon scraper uses hardcoded URLs for better reliability
     
     @classmethod
     def validate(cls):

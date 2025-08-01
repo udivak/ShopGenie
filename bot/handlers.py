@@ -5,7 +5,7 @@ import logging
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from scrapers.aliexpress_scraper import AliExpressScraper
+from scrapers.amazon_scraper import AmazonScraper
 from utils.item_comparator import ItemComparator
 from utils.formatter import MessageFormatter
 from config import config
@@ -16,7 +16,7 @@ class BotHandlers:
     """Container class for all bot message handlers."""
     
     def __init__(self):
-        self.scraper = AliExpressScraper()
+        self.scraper = AmazonScraper()
         self.comparator = ItemComparator()
         self.formatter = MessageFormatter()
     
@@ -53,7 +53,7 @@ class BotHandlers:
             logger.error(f"Error in help command: {e}")
             await update.message.reply_text(
                 "ShopGenie Bot Help:\n\n"
-                "Send me any product name to search for items on AliExpress.\n"
+                "Send me any product name to search for items on Amazon.\n"
                 "I'll show you the top 4 results with prices and ratings!"
             )
     
@@ -74,7 +74,7 @@ class BotHandlers:
             
             # Send initial response
             searching_message = await update.message.reply_text(
-                f"🔍 Searching for '{query}' on AliExpress...\nThis may take a few seconds."
+                f"🔍 Searching for '{query}' on Amazon...\nThis may take a few seconds."
             )
             
             try:

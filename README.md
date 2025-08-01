@@ -1,10 +1,10 @@
-# 🛍️ ShopGenie - Telegram Bot for AliExpress Item Search
+# 🛍️ ShopGenie - Telegram Bot for Amazon Product Search
 
-A sophisticated Telegram bot that searches AliExpress for products and returns the top 4 best-matched results with comprehensive product information including pricing, ratings, sales data, and direct purchase links.
+A sophisticated Telegram bot that searches Amazon for products and returns the top 4 best-matched results with comprehensive product information including pricing, ratings, sales data, and direct purchase links.
 
 ## ✨ Features
 
-- 🔍 **Smart Product Search**: Advanced web scraping of AliExpress search results
+- 🔍 **Smart Product Search**: Advanced web scraping of Amazon search results
 - 🏆 **Intelligent Ranking**: Multi-factor scoring system based on price, rating, and sales
 - 📱 **Rich Formatting**: Beautiful Telegram messages with markdown formatting
 - 🖼️ **Product Images**: Thumbnail images for visual product identification
@@ -86,7 +86,7 @@ ShopGenie/
 ├── scrapers/             # Web scraping components
 │   ├── __init__.py
 │   ├── base_scraper.py   # Abstract scraper interface
-│   └── aliexpress_scraper.py  # AliExpress implementation
+│   └── amazon_scraper.py      # Amazon implementation
 └── utils/                # Utility functions
     ├── __init__.py
     ├── item_comparator.py # Product ranking logic
@@ -113,11 +113,11 @@ Simply send any product name or description to the bot:
 ### Bot Response
 
 For each search, the bot returns up to 4 products with:
-- 📱 **Product Title** (linked to AliExpress)
+- 📱 **Product Title** (linked to Amazon)
 - 💰 **Price** (in original currency)
 - ⭐ **Rating** (with star visualization)
-- 📊 **Sales Count** (formatted with K/M suffixes)
-- 🏪 **Source** (AliExpress)
+- 📊 **Review Count** (formatted with K/M suffixes)
+- 🏪 **Source** (Amazon)
 - 🔗 **Direct Purchase Link**
 
 ## 🧠 Ranking Algorithm
@@ -126,14 +126,14 @@ The bot uses a sophisticated scoring system to rank products:
 
 ### Scoring Factors (Weighted)
 - **Rating** (40%): Product rating on 0-5 scale
-- **Sales** (30%): Number of orders/sales (log-scaled)
+- **Reviews** (30%): Number of reviews (log-scaled)
 - **Price** (30%): Lower prices score higher (inverse relationship)
 
 ### Ranking Methods
 - `score`: Composite score (default)
 - `price`: Lowest price first
 - `rating`: Highest rating first
-- `sales`: Most sales first
+- `reviews`: Most reviews first
 
 ## 🔧 Extending to Other E-commerce Sources
 
@@ -166,20 +166,16 @@ from scrapers.amazon_scraper import AmazonScraper
 
 class BotHandlers:
     def __init__(self):
-        self.aliexpress_scraper = AliExpressScraper()
-        self.amazon_scraper = AmazonScraper()  # Add new scraper
+        self.amazon_scraper = AmazonScraper()
         # ... rest of initialization
 ```
 
 ### 3. Modify Search Logic
 
 ```python
-# Combine results from multiple sources
-aliexpress_products = await self.aliexpress_scraper.search(query)
+# Search Amazon for products
 amazon_products = await self.amazon_scraper.search(query)
-
-all_products = aliexpress_products + amazon_products
-top_products = self.comparator.rank_products(all_products)
+top_products = self.comparator.rank_products(amazon_products)
 ```
 
 ## 🛡️ Security & Compliance
@@ -192,7 +188,7 @@ top_products = self.comparator.rank_products(all_products)
 ### Rate Limiting
 - ✅ Configurable delays between requests
 - ✅ Retry mechanisms with exponential backoff
-- ✅ Respect for AliExpress ToS and rate limits
+- ✅ Respect for Amazon ToS and rate limits
 
 ### Best Practices
 - ✅ Proper user agent headers
@@ -260,7 +256,7 @@ await bot.start_webhook(
 
 ### Health Checks
 - Bot responsiveness
-- AliExpress accessibility
+- Amazon accessibility
 - Memory usage
 
 ## 🐛 Troubleshooting
@@ -274,7 +270,7 @@ await bot.start_webhook(
 
 **Search returns no results:**
 - ✅ Try different search terms
-- ✅ Check if AliExpress is accessible
+- ✅ Check if Amazon is accessible
 - ✅ Verify user agent and headers
 
 **Frequent timeouts:**
@@ -301,10 +297,10 @@ Run a quick test search:
 ```python
 # test_bot.py
 import asyncio
-from scrapers.aliexpress_scraper import AliExpressScraper
+from scrapers.amazon_scraper import AmazonScraper
 
 async def test():
-    scraper = AliExpressScraper()
+    scraper = AmazonScraper()
     products = await scraper.search("test product")
     print(f"Found {len(products)} products")
 
@@ -333,7 +329,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 🔮 Future Enhancements
 
-- [ ] Support for more e-commerce platforms (Amazon, eBay, etc.)
+- [ ] Support for more e-commerce platforms (AliExpress, eBay, etc.)
 - [ ] Price tracking and alerts
 - [ ] User preferences and favorites
 - [ ] Advanced filtering options
@@ -348,7 +344,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - [python-telegram-bot](https://github.com/python-telegram-bot/python-telegram-bot) - Telegram Bot API wrapper
 - [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/) - HTML parsing library
 - [aiohttp](https://docs.aiohttp.org/) - Asynchronous HTTP client
-- [AliExpress](https://aliexpress.com) - Product data source
+- [Amazon](https://amazon.com) - Product data source
 
 ---
 

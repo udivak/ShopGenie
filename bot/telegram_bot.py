@@ -93,25 +93,22 @@ class ShopGenieBot:
         try:
             logger.info("Starting bot with polling...")
             
-            # Start polling
-            await self.application.initialize()
-            await self.application.start()
-            await self.application.updater.start_polling(
-                allowed_updates=Update.ALL_TYPES,
-                drop_pending_updates=True
-            )
-            
-            logger.info("Bot is running and polling for updates...")
-            
-            # Keep the bot running
-            await self.application.updater.idle()
+            # Start the application
+            async with self.application:
+                await self.application.start()
+                await self.application.updater.start_polling(
+                    allowed_updates=Update.ALL_TYPES,
+                    drop_pending_updates=True
+                )
+                
+                logger.info("Bot is running and polling for updates...")
+                
+                # Keep the bot running
+                await self.application.updater.idle()
             
         except Exception as e:
             logger.error(f"Error during polling: {e}")
             raise
-        finally:
-            # Cleanup
-            await self.stop()
     
     async def start_webhook(self, webhook_url: str, port: int = 8443, 
                            cert_path: str = None, key_path: str = None) -> None:
@@ -163,21 +160,21 @@ class ShopGenieBot:
             try:
                 logger.info("Stopping bot...")
                 await self.application.stop()
-                await self.application.shutdown()
                 logger.info("Bot stopped successfully")
             except Exception as e:
                 logger.error(f"Error stopping bot: {e}")
     
     def run_polling(self) -> None:
-        """Run the bot in polling mode (synchronous wrapper)."""
-        import asyncio
-        
+        """Run the bot in polling mode (synchronous wrapper)."""        
         try:
             if not self.application:
                 self.build()
             
-            # Run the async polling
-            asyncio.run(self.start_polling())
+            # Run the bot with polling
+            self.application.run_polling(
+                allowed_updates=Update.ALL_TYPES,
+                drop_pending_updates=True
+            )
             
         except KeyboardInterrupt:
             logger.info("Bot stopped by user")
