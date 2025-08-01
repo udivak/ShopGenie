@@ -62,6 +62,58 @@ class MessageFormatter:
             return f"❌ Error formatting product information\n\n"
     
     @staticmethod
+    def format_search_header(products: List[Product], query: str) -> str:
+        """Format search results header."""
+        message = f"🔍 *Search Results for:* {MessageFormatter._escape_markdown(query)}\n"
+        message += f"📦 Found {len(products)} products\n\n"
+        return message
+    
+    @staticmethod
+    def format_product_caption(product: Product, index: int) -> str:
+        """Format product caption for photo message."""
+        try:
+            # Start with product number and title
+            message = f"*{index}\\. {MessageFormatter._escape_markdown(product.title)}*\n\n"
+            
+            # Add price
+            if product.price and product.price != "N/A":
+                message += f"💰 *Price:* {MessageFormatter._escape_markdown(product.price)}\n"
+            
+            # Add rating with stars
+            if product.rating > 0:
+                stars = MessageFormatter._get_star_rating(product.rating)
+                # Format rating: show whole numbers without decimal (5/5 instead of 5.0/5)
+                if product.rating == int(product.rating):
+                    rating_text = f"{int(product.rating)}/5"
+                else:
+                    rating_text = f"{product.rating:.1f}/5"
+                escaped_rating = MessageFormatter._escape_markdown(rating_text)
+                message += f"⭐ *Rating:* {escaped_rating} {stars}\n"
+            
+            # Add sales count
+            if product.sales > 0:
+                sales_text = MessageFormatter._format_sales_count(product.sales)
+                message += f"📊 *Sales:* {sales_text}\n"
+            
+            # Add source
+            message += f"🏪 *Source:* {product.source}\n\n"
+            
+            # Add purchase link
+            if product.product_url:
+                message += f"🔗 [View Product]({product.product_url})"
+            
+            return message
+            
+        except Exception as e:
+            logger.error(f"Error formatting product caption: {e}")
+            return f"❌ Error formatting product information"
+    
+    @staticmethod
+    def format_footer_message() -> str:
+        """Format footer message."""
+        return "🤖 *ShopGenie Bot* \\- Happy shopping\\! 🛒"
+    
+    @staticmethod
     def format_search_results(products: List[Product], query: str) -> str:
         """
         Format complete search results for Telegram.

@@ -98,11 +98,49 @@ class BotHandlers:
                     limit=config.TOP_RESULTS_COUNT
                 )
                 
-                # Format and send results
-                message = self.formatter.format_search_results(top_products, query)
+                # Delete the searching message
+                await searching_message.delete()
                 
-                await searching_message.edit_text(
-                    message,
+                # Send header message
+                header_message = self.formatter.format_search_header(top_products, query)
+                await update.message.reply_text(
+                    header_message,
+                    parse_mode='MarkdownV2',
+                    disable_web_page_preview=True
+                )
+                
+                # Send individual product photos with captions
+                for i, product in enumerate(top_products, 1):
+                    try:
+                        if product.image_url:
+                            caption = self.formatter.format_product_caption(product, i)
+                            await update.message.reply_photo(
+                                photo=product.image_url,
+                                caption=caption,
+                                parse_mode='MarkdownV2'
+                            )
+                        else:
+                            # Fallback to text message if no image
+                            product_message = self.formatter.format_product_message(product, i)
+                            await update.message.reply_text(
+                                product_message,
+                                parse_mode='MarkdownV2',
+                                disable_web_page_preview=True
+                            )
+                    except Exception as img_error:
+                        logger.warning(f"Failed to send image for product {i}: {img_error}")
+                        # Fallback to text message
+                        product_message = self.formatter.format_product_message(product, i)
+                        await update.message.reply_text(
+                            product_message,
+                            parse_mode='MarkdownV2',
+                            disable_web_page_preview=True
+                        )
+                
+                # Send footer message
+                footer_message = self.formatter.format_footer_message()
+                await update.message.reply_text(
+                    footer_message,
                     parse_mode='MarkdownV2',
                     disable_web_page_preview=True
                 )
