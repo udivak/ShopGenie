@@ -127,19 +127,38 @@ class AmazonScraper(BaseScraper):
             image_url = ""
             product_url = ""
             
-            # Extract title
-            title_element = element.find('h2', class_=re.compile(r's-size-mini'))
+            # Extract title - Updated selectors for current Amazon structure
+            # Method 1: Try data-cy="title-recipe" (most reliable)
+            title_element = element.find(attrs={'data-cy': 'title-recipe'})
             if title_element:
-                title_link = title_element.find('a')
-                if title_link:
-                    title = self._clean_text(title_link.get_text())
+                title = self._clean_text(title_element.get_text())
             
+            # Method 2: Try h2 with updated class patterns
             if not title or title == "Unknown Item":
-                # Try alternative title selectors
+                title_element = element.find('h2', class_=re.compile(r'a-size-mini|a-size-base-plus'))
+                if title_element:
+                    title_link = title_element.find('a')
+                    if title_link:
+                        title = self._clean_text(title_link.get_text())
+            
+            # Method 3: Try finding product links directly
+            if not title or title == "Unknown Item":
+                all_links = element.find_all('a', href=True)
+                for link in all_links:
+                    href = link.get('href', '')
+                    if ('/dp/' in href or '/gp/' in href):
+                        link_text = self._clean_text(link.get_text())
+                        if link_text and len(link_text) > 15:  # Reasonable title length
+                            title = link_text
+                            break
+            
+            # Method 4: Fallback selectors
+            if not title or title == "Unknown Item":
                 title_selectors = [
                     'h2 a span',
                     'h2 span',
-                    '[data-cy="title-recipe-link"]'
+                    '[data-cy="title-recipe-link"]',
+                    'a[href*="/dp/"]'
                 ]
                 for selector in title_selectors:
                     title_element = element.select_one(selector)
@@ -193,26 +212,27 @@ class AmazonScraper(BaseScraper):
                 if image_url and not image_url.startswith('http'):
                     image_url = urljoin(self.base_url, image_url)
             
-            # Extract product URL
-            link_element = element.find('h2', class_=re.compile(r's-size-mini'))
-            if link_element:
-                link = link_element.find('a')
-                if link:
-                    product_url = link.get('href')
-                    if product_url:
-                        if not product_url.startswith('http'):
-                            product_url = urljoin(self.base_url, product_url)
+            # Extract product URL - Updated for current Amazon structure
+            # First try to find product links directly
+            all_links = element.find_all('a', href=True)
+            for link in all_links:
+                href = link.get('href')
+                if href and ('/dp/' in href or '/gp/' in href):
+                    product_url = href
+                    if not product_url.startswith('http'):
+                        product_url = urljoin(self.base_url, product_url)
+                    break
             
-            # Fallback URL extraction
+            # Fallback: try h2 elements with updated classes
             if not product_url:
-                all_links = element.find_all('a', href=True)
-                for link in all_links:
-                    href = link.get('href')
-                    if href and ('/dp/' in href or '/gp/' in href):
-                        product_url = href
-                        if not product_url.startswith('http'):
-                            product_url = urljoin(self.base_url, product_url)
-                        break
+                link_element = element.find('h2', class_=re.compile(r'a-size-mini|a-size-base-plus'))
+                if link_element:
+                    link = link_element.find('a')
+                    if link:
+                        product_url = link.get('href')
+                        if product_url:
+                            if not product_url.startswith('http'):
+                                product_url = urljoin(self.base_url, product_url)
             
             # Validate that we have essential data
             if not title or title == "Unknown Item" or len(title) < 5:
