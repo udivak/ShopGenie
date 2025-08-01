@@ -219,7 +219,7 @@ class AmazonScraper(BaseScraper):
                 return None
             
             return Product(
-                title=title[:100],  # Limit title length
+                title=title,  # Use full title from Amazon
                 price=price,
                 rating=min(rating, 5.0),  # Cap rating at 5
                 sales=sales,

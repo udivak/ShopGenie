@@ -33,7 +33,11 @@ class MessageFormatter:
             # Add rating with stars
             if product.rating > 0:
                 stars = MessageFormatter._get_star_rating(product.rating)
-                rating_text = f"{product.rating:.1f}/5"
+                # Format rating: show whole numbers without decimal (5/5 instead of 5.0/5)
+                if product.rating == int(product.rating):
+                    rating_text = f"{int(product.rating)}/5"
+                else:
+                    rating_text = f"{product.rating:.1f}/5"
                 escaped_rating = MessageFormatter._escape_markdown(rating_text)
                 message += f"⭐ *Rating:* {escaped_rating} {stars}\n"
             
@@ -186,12 +190,12 @@ class MessageFormatter:
     
     @staticmethod
     def _get_star_rating(rating: float) -> str:
-        """Convert numeric rating to star representation."""
+        """Convert numeric rating to star representation using integer part."""
+        # Use integer part of rating (4.x shows as 4 stars)
         full_stars = int(rating)
-        half_star = 1 if (rating - full_stars) >= 0.5 else 0
-        empty_stars = 5 - full_stars - half_star
+        empty_stars = 5 - full_stars
         
-        return "⭐" * full_stars + "⭐" * half_star + "☆" * empty_stars
+        return "⭐" * full_stars + "☆" * empty_stars
     
     @staticmethod
     def _format_sales_count(sales: int) -> str:
