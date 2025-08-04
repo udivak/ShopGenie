@@ -62,9 +62,11 @@ class MessageFormatter:
             return f"❌ Error formatting product information\n\n"
     
     @staticmethod
-    def format_search_header(products: List[Product], query: str) -> str:
+    def format_search_header(products: List[Product], query: str, platform: str = None) -> str:
         """Format search results header."""
         message = f"🔍 *Search Results for:* {MessageFormatter._escape_markdown(query)}\n"
+        if platform:
+            message += f"🏪 *Platform:* {MessageFormatter._escape_markdown(platform)}\n"
         message += f"📦 Found {len(products)} products\n\n"
         return message
     
@@ -161,11 +163,13 @@ class MessageFormatter:
         return message
     
     @staticmethod
-    def format_error_message(error_type: str = "general") -> str:
+    def format_error_message(error_type: str = "general", platform: str = None) -> str:
         """Format error messages."""
+        platform_text = platform or "the platform"
+        
         if error_type == "network":
             message = "🌐 *Network Error*\n\n"
-            message += "Unable to connect to Amazon\\. This could be due to:\n"
+            message += f"Unable to connect to {platform_text}\\. This could be due to:\n"
             message += "• Temporary server issues\n"
             message += "• Network connectivity problems\n"
             message += "• Rate limiting\n\n"
@@ -178,25 +182,39 @@ class MessageFormatter:
         
         else:
             message = "❌ *Something went wrong*\n\n"
-            message += "An unexpected error occurred while searching\\.\n"
-            message += "Please try again or contact support if the problem persists\\."
+            message += "An unexpected error occurred while searching\\.\n\n"
+            message += "*Please check your search format:*\n"
+            message += "`item name, platform` or `platform, item name`\n\n"
+            message += "*Supported platforms:* Amazon, eBay\n\n"
+            message += "*Examples:*\n"
+            message += "• `bluetooth speaker, amazon`\n"
+            message += "• `ebay, wireless headphones`"
         
         message += "\n\n🤖 *ShopGenie Bot*"
         return message
+
+    @staticmethod
+    def format_search_parameter_error(error_message: str) -> str:
+        """Format search parameter error messages."""
+        return error_message
     
     @staticmethod
     def format_help_message() -> str:
         """Format help message."""
         message = "🤖 *ShopGenie Bot Help*\n\n"
         message += "*How to use:*\n"
-        message += "• Send me any product name to search\n"
-        message += "• I'll find the best 4 matches from Amazon\n"
-        message += "• Each result includes price, rating, and direct link\n\n"
+        message += "Send me your search in this format:\n"
+        message += "`item name, platform` or `platform, item name`\n\n"
+        
+        message += "*Supported platforms:*\n"
+        message += "• Amazon\n"
+        message += "• eBay\n\n"
         
         message += "*Examples:*\n"
-        message += "• \"wireless headphones\"\n"
-        message += "• \"smartphone case\"\n"
-        message += "• \"laptop stand\"\n\n"
+        message += "• `bluetooth speaker, amazon`\n"
+        message += "• `ebay, wireless headphones`\n"
+        message += "• `laptop on amazon`\n"
+        message += "• `phone case from ebay`\n\n"
         
         message += "*Commands:*\n"
         message += "/start \\- Start the bot\n"
@@ -210,13 +228,16 @@ class MessageFormatter:
     def format_start_message() -> str:
         """Format welcome/start message."""
         message = "🛍️ *Welcome to ShopGenie Bot\\!*\n\n"
-        message += "I help you find the best products on Amazon\\.\n\n"
-        message += "*Just send me:*\n"
-        message += "• Any product name or description\n"
-        message += "• I'll search and show you the top 4 results\n"
-        message += "• With prices, ratings, and direct purchase links\n\n"
+        message += "I help you find the best products across multiple platforms\\!\n\n"
+        message += "*How to search:*\n"
+        message += "Send: `item name, platform`\n"
+        message += "Or: `platform, item name`\n\n"
         
-        message += "*Example:* Try typing \"bluetooth speaker\"\n\n"
+        message += "*Supported platforms:*\n"
+        message += "• Amazon\n"
+        message += "• eBay\n\n"
+        
+        message += "*Example:* `bluetooth speaker, amazon`\n\n"
         message += "Type /help for more information\\.\n\n"
         message += "Let's start shopping\\! 🛒"
         
