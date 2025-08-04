@@ -19,8 +19,8 @@ class Config:
     DELAY_BETWEEN_REQUESTS = float(os.getenv('DELAY_BETWEEN_REQUESTS', 1.0))
     
     # Search Configuration
-    MAX_SEARCH_RESULTS = int(os.getenv('MAX_SEARCH_RESULTS', 10))
-    TOP_RESULTS_COUNT = int(os.getenv('TOP_RESULTS_COUNT', 4))
+    MAX_SEARCH_RESULTS = int(os.getenv('MAX_SEARCH_RESULTS', 50))
+    TOP_RESULTS_COUNT = int(os.getenv('TOP_RESULTS_COUNT', 5))
     
     # User Agent for web scraping
     USER_AGENT = os.getenv('USER_AGENT', 

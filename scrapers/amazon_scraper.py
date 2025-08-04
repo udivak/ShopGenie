@@ -33,7 +33,7 @@ class AmazonScraper(BaseScraper):
             }
         )
     
-    async def search(self, query: str, max_results: int = 10) -> List[Product]:
+    async def search(self, query: str, max_results: int = 50) -> List[Product]:
         """
         Search for products on Amazon.
         

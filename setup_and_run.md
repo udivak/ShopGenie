@@ -189,7 +189,7 @@ Send a product name like: `wireless headphones`
 **Expected response:**
 ```
 🔍 Search Results for: wireless headphones
-📦 Found 4 products
+📦 Found 5 products
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
