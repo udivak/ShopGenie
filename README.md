@@ -1,17 +1,21 @@
-# 🛍️ ShopGenie - Telegram Bot for Amazon Product Search
+# 🛍️ ShopGenie - Multi-Platform Shopping Telegram Bot
 
-A sophisticated Telegram bot that searches Amazon for products and returns the top 4 best-matched results with comprehensive product information including pricing, ratings, sales data, and direct purchase links.
+A sophisticated Telegram bot that searches multiple e-commerce platforms (Amazon & eBay) for products and returns the top-ranked results with comprehensive product information including pricing, ratings, sales data, and direct purchase links. Features intelligent search parsing, platform-specific optimizations, and robust error handling.
 
 ## ✨ Features
 
-- 🔍 **Smart Product Search**: Advanced web scraping of Amazon search results
+- 🛒 **Multi-Platform Support**: Search both Amazon and eBay with a single bot
+- 🔍 **Smart Product Search**: Advanced web scraping with platform-specific optimizations
+- 💬 **Flexible Input Parsing**: Multiple search formats (`item, platform` or `platform, item` or `item on platform`)
 - 🏆 **Intelligent Ranking**: Multi-factor scoring system based on price, rating, and sales
-- 📱 **Rich Formatting**: Beautiful Telegram messages with markdown formatting
-- 🖼️ **Product Images**: Thumbnail images for visual product identification
-- ⭐ **Detailed Info**: Price, rating, sales count, and direct purchase links
-- 🚀 **Fast & Reliable**: Asynchronous processing with retry mechanisms
-- 🛡️ **Error Handling**: Graceful error handling with user-friendly messages
-- 🔧 **Modular Design**: Extensible architecture for adding more e-commerce sources
+- 📱 **Rich Formatting**: Beautiful Telegram messages with markdown formatting and product photos
+- 🖼️ **Product Images**: High-quality product images with intelligent fallbacks
+- ⭐ **Detailed Info**: Price, rating, sales count, platform, and direct purchase links
+- 🚀 **Fast & Reliable**: Asynchronous processing with retry mechanisms and exponential backoff
+- 🛡️ **Advanced Error Handling**: Platform status tracking with user-friendly error messages
+- 🤖 **Anti-Bot Detection**: Intelligent handling of rate limiting and bot detection
+- 🔧 **Modular Design**: Extensible scraper manager for adding more e-commerce platforms
+- 🔄 **Development Mode**: Auto-reload functionality for seamless development
 
 ## 🚀 Quick Start
 
@@ -22,15 +26,18 @@ A sophisticated Telegram bot that searches Amazon for products and returns the t
 
 ### Installation
 
+#### Automated Setup (Recommended)
+
 1. **Clone the repository:**
    ```bash
    git clone <repository-url>
    cd ShopGenie
    ```
 
-2. **Install dependencies:**
+2. **Run the setup script:**
    ```bash
-   pip install -r requirements.txt
+   chmod +x setup.sh
+   ./setup.sh
    ```
 
 3. **Configure the bot:**
@@ -43,10 +50,29 @@ A sophisticated Telegram bot that searches Amazon for products and returns the t
    TELEGRAM_BOT_TOKEN=your_bot_token_here
    ```
 
-4. **Run the bot:**
+4. **Activate the virtual environment:**
    ```bash
-   python main.py
+   source shopgenie_env/bin/activate
    ```
+
+5. **Run the bot:**
+   ```bash
+   python main.py              # Production mode
+   python run_dev.py           # Development mode with auto-reload
+   ```
+
+#### Manual Setup
+
+1. **Clone and setup environment:**
+   ```bash
+   git clone <repository-url>
+   cd ShopGenie
+   python3 -m venv shopgenie_env
+   source shopgenie_env/bin/activate
+   pip install -r requirements.txt
+   ```
+
+2. **Configure and run (same as steps 3-5 above)**
 
 ### Creating a Telegram Bot
 
@@ -74,23 +100,31 @@ All configuration is handled through environment variables in the `.env` file:
 
 ```
 ShopGenie/
-├── main.py                 # Entry point
-├── config.py              # Configuration management
-├── requirements.txt       # Python dependencies
-├── env.example           # Environment variables template
-├── README.md             # This file
-├── bot/                  # Telegram bot components
+├── main.py                    # Main entry point
+├── run_dev.py                 # Development mode with auto-reload
+├── config.py                  # Configuration management
+├── requirements.txt           # Python dependencies
+├── env.example               # Environment variables template
+├── setup.sh                  # Automated setup script
+├── test_bot.py               # Testing framework
+├── README.md                 # This file
+├── bot/                      # Telegram bot components
 │   ├── __init__.py
-│   ├── telegram_bot.py   # Main bot class
-│   └── handlers.py       # Message handlers
-├── scrapers/             # Web scraping components
+│   ├── telegram_bot.py       # Main bot class and factory
+│   └── handlers.py           # Message handlers and command processing
+├── scrapers/                 # Web scraping components
 │   ├── __init__.py
-│   ├── base_scraper.py   # Abstract scraper interface
-│   └── amazon_scraper.py      # Amazon implementation
-└── utils/                # Utility functions
+│   ├── base_scraper.py       # Abstract scraper interface
+│   ├── scraper_manager.py    # Multi-platform scraper manager
+│   ├── amazon_scraper.py     # Amazon implementation
+│   └── ebay_scraper.py       # eBay implementation
+└── utils/                    # Utility functions
     ├── __init__.py
-    ├── item_comparator.py # Product ranking logic
-    └── formatter.py      # Message formatting
+    ├── item_comparator.py     # Product ranking and scoring logic
+    ├── formatter.py           # Telegram message formatting
+    ├── item_formatter.py      # General product formatting
+    ├── message_parser.py      # Search query parsing
+    └── platform_status.py    # Platform health tracking
 ```
 
 ## 🎯 Usage
@@ -102,23 +136,42 @@ ShopGenie/
 
 ### Searching for Products
 
-Simply send any product name or description to the bot:
+The bot supports multiple flexible search formats. You **must** specify both the item and platform:
+
+**Supported Formats:**
+- `item name, platform`
+- `platform, item name`
+- `item name on platform`
+- `item name from platform`
+
+**Supported Platforms:**
+- `amazon` (or `amazon.com`, `amzn`)
+- `ebay` (or `ebay.com`, `bay`)
 
 **Examples:**
-- `wireless headphones`
-- `smartphone case iPhone 14`
-- `laptop stand adjustable`
-- `LED strip lights`
+- `wireless headphones, amazon`
+- `ebay, smartphone case iPhone 14`
+- `laptop stand on amazon`
+- `LED strip lights from ebay`
 
 ### Bot Response
 
-For each search, the bot returns up to 5 products with:
-- 📱 **Product Title** (linked to Amazon)
+For each search, the bot returns up to 5 top-ranked products with:
+- 🖼️ **Product Image** (when available)
+- 📱 **Product Title** (cleaned and formatted)
 - 💰 **Price** (in original currency)
 - ⭐ **Rating** (with star visualization)
-- 📊 **Review Count** (formatted with K/M suffixes)
-- 🏪 **Source** (Amazon)
+- 📊 **Sales/Reviews** (formatted with K/M suffixes)
+- 🏪 **Platform** (Amazon or eBay)
 - 🔗 **Direct Purchase Link**
+
+### Error Handling
+
+The bot provides intelligent error messages for:
+- Platform availability issues
+- Anti-bot detection responses
+- Network connectivity problems
+- Invalid search formats
 
 ## 🧠 Ranking Algorithm
 
@@ -135,48 +188,87 @@ The bot uses a sophisticated scoring system to rank products:
 - `rating`: Highest rating first
 - `reviews`: Most reviews first
 
-## 🔧 Extending to Other E-commerce Sources
+## 🔧 Extending to Other E-commerce Platforms
 
-The modular design makes it easy to add more e-commerce platforms:
+The modular design with `ScraperManager` makes it easy to add more e-commerce platforms:
 
 ### 1. Create a New Scraper
 
 ```python
-# scrapers/amazon_scraper.py
+# scrapers/new_platform_scraper.py
 from .base_scraper import BaseScraper, Product
+from typing import List, Optional
 
-class AmazonScraper(BaseScraper):
+class NewPlatformScraper(BaseScraper):
     def __init__(self):
-        super().__init__("https://amazon.com")
+        super().__init__(
+            base_url="https://newplatform.com",
+            headers={
+                'User-Agent': 'Mozilla/5.0 ...',
+                # Add platform-specific headers
+            }
+        )
     
-    async def search(self, query: str, max_results: int = 10) -> List[Product]:
-        # Implement Amazon-specific scraping logic
+    async def search(self, query: str, max_results: int = 50) -> List[Product]:
+        # Implement platform-specific search logic
+        search_url = f"{self.base_url}/search?q={query}"
+        # ... scraping implementation
         pass
     
     def _parse_product(self, element) -> Optional[Product]:
-        # Implement Amazon product parsing
-        pass
+        # Implement platform-specific product parsing
+        return Product(
+            title=title,
+            price=price,
+            rating=rating,
+            sales=sales,
+            image_url=image_url,
+            product_url=product_url,
+            source="NewPlatform"
+        )
 ```
 
-### 2. Update the Bot Handlers
+### 2. Register with ScraperManager
 
 ```python
-# bot/handlers.py
-from scrapers.amazon_scraper import AmazonScraper
+# scrapers/scraper_manager.py
+from .new_platform_scraper import NewPlatformScraper
 
-class BotHandlers:
+class ScraperManager:
     def __init__(self):
-        self.amazon_scraper = AmazonScraper()
-        # ... rest of initialization
+        self._scrapers: Dict[str, BaseScraper] = {
+            'amazon': AmazonScraper(),
+            'ebay': EbayScraper(),
+            'newplatform': NewPlatformScraper()  # Add your scraper
+        }
+        
+        # Add aliases
+        self._aliases = {
+            # ... existing aliases
+            'newplatform.com': 'newplatform',
+            'np': 'newplatform'
+        }
 ```
 
-### 3. Modify Search Logic
+### 3. Update Platform Display Names
 
 ```python
-# Search Amazon for products
-amazon_products = await self.amazon_scraper.search(query)
-top_products = self.comparator.rank_products(amazon_products)
+# Add to scraper_manager.py get_platform_display_name method
+display_names = {
+    'amazon': 'Amazon',
+    'ebay': 'eBay',
+    'newplatform': 'NewPlatform'  # Add display name
+}
 ```
+
+### 4. Update Documentation
+
+Update help messages in `utils/formatter.py` and `utils/message_parser.py` to include the new platform.
+
+**That's it!** The `ScraperManager` automatically handles the new platform, and users can search with formats like:
+- `headphones, newplatform`
+- `newplatform, laptop`
+- `phone case on newplatform`
 
 ## 🛡️ Security & Compliance
 
@@ -199,9 +291,36 @@ top_products = self.comparator.rank_products(amazon_products)
 ## 🚀 Deployment Options
 
 ### Local Development
+
+#### Production Mode
 ```bash
+source shopgenie_env/bin/activate
 python main.py
 ```
+
+#### Development Mode (Recommended for Development)
+```bash
+source shopgenie_env/bin/activate
+python run_dev.py
+```
+
+**Development Mode Features:**
+- 🔄 **Auto-reload**: Automatically restarts the bot when you modify any `.py` files
+- 📁 **File Watching**: Monitors `bot/`, `scrapers/`, `utils/` directories and root files
+- 🛠️ **Development Friendly**: Faster iteration cycles for bot development
+- 📊 **Process Management**: Graceful restart and cleanup of bot processes
+
+#### Testing
+```bash
+source shopgenie_env/bin/activate
+python test_bot.py
+```
+
+The test framework validates:
+- Configuration loading
+- Scraper functionality
+- Message formatting
+- Error handling
 
 ### Docker (Optional)
 ```dockerfile
@@ -329,15 +448,28 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 🔮 Future Enhancements
 
-- [ ] Support for more e-commerce platforms (AliExpress, eBay, etc.)
+### Completed ✅
+- ✅ Support for multiple e-commerce platforms (Amazon, eBay)
+- ✅ Advanced error handling and platform status tracking
+- ✅ Flexible message parsing with multiple input formats
+- ✅ Development mode with auto-reload functionality
+- ✅ Comprehensive testing framework
+- ✅ Rich product formatting with images
+
+### Planned 🔄
+- [ ] Support for more e-commerce platforms (AliExpress, Walmart, Target)
 - [ ] Price tracking and alerts
 - [ ] User preferences and favorites
-- [ ] Advanced filtering options
+- [ ] Advanced filtering options (price range, rating, etc.)
 - [ ] Product comparison features
 - [ ] Multi-language support
 - [ ] Analytics dashboard
-- [ ] Cache optimization
-- [ ] Machine learning-based ranking
+- [ ] Cache optimization for faster repeated searches
+- [ ] Machine learning-based ranking improvements
+- [ ] Database integration for search history
+- [ ] Web interface (FastAPI integration)
+- [ ] Scheduled price monitoring
+- [ ] Product availability notifications
 
 ## 🙏 Acknowledgments
 
