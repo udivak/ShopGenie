@@ -38,6 +38,10 @@ class ItemFormatter:
             # Ensure image URL is valid
             image_url = ItemFormatter._validate_image_url(product.image_url, product.source)
             
+            # If no image URL, try to generate a fallback based on platform
+            if not image_url:
+                image_url = ItemFormatter._get_fallback_image(product.source, clean_title)
+            
             # Platform display name
             platform_display = ItemFormatter._get_platform_display_name(product.source)
             
@@ -276,6 +280,37 @@ class ItemFormatter:
                 logger.debug(f"Unusual Amazon image URL: {image_url}")
         
         return image_url
+    
+    @staticmethod
+    def _get_fallback_image(platform: str, title: str) -> str:
+        """
+        Get a fallback image URL when product image is not available.
+        
+        Args:
+            platform: Platform name (e.g., 'ebay', 'amazon')
+            title: Product title for potential image generation
+            
+        Returns:
+            Fallback image URL or empty string
+        """
+        # Use placeholder image service for consistent product images
+        # This creates a 400x400 image with platform branding and product name
+        
+        if platform.lower() == 'ebay':
+            # Create a placeholder image with eBay branding
+            # Using a public placeholder service that supports text
+            title_encoded = title.replace(' ', '+')[:50]  # Limit length and encode spaces
+            return f"https://via.placeholder.com/400x400/0064D2/FFFFFF?text=eBay+Product%0A{title_encoded}"
+        
+        elif platform.lower() == 'amazon':
+            # Amazon placeholder (though Amazon usually has images)
+            title_encoded = title.replace(' ', '+')[:50]
+            return f"https://via.placeholder.com/400x400/FF9900/FFFFFF?text=Amazon+Product%0A{title_encoded}"
+        
+        else:
+            # Generic placeholder for other platforms
+            title_encoded = title.replace(' ', '+')[:50]
+            return f"https://via.placeholder.com/400x400/6C757D/FFFFFF?text=Product%0A{title_encoded}"
     
     @staticmethod
     def _get_platform_display_name(platform: str) -> str:

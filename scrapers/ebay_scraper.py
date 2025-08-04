@@ -293,7 +293,9 @@ class EbayScraper(BaseScraper):
                     alt_img_selectors = [
                         '.s-item__image img',
                         '.s-item__link img',
-                        'img[src*="ebayimg"]'
+                        'img[src*="ebayimg"]',
+                        'img[data-src*="ebayimg"]',
+                        '.s-item__wrapper img'
                     ]
                     for selector in alt_img_selectors:
                         alt_img = element.select_one(selector)
@@ -301,13 +303,16 @@ class EbayScraper(BaseScraper):
                             image_url = (
                                 alt_img.get('src') or 
                                 alt_img.get('data-src') or 
-                                alt_img.get('data-original')
+                                alt_img.get('data-original') or
+                                alt_img.get('data-lazy')
                             )
                             if image_url:
                                 break
                 
                 # Clean up and validate image URL
                 if image_url:
+                    logger.debug(f"Raw image URL found: {image_url}")
+                    
                     # Remove any query parameters that might cause issues
                     if '?' in image_url:
                         image_url = image_url.split('?')[0]
@@ -320,6 +325,15 @@ class EbayScraper(BaseScraper):
                     if 's-l' in image_url:
                         # Try to get larger image by replacing size parameter
                         image_url = image_url.replace('s-l64', 's-l300').replace('s-l140', 's-l300')
+                    
+                    # Ensure we have a valid eBay image URL
+                    if 'ebayimg.com' in image_url or 'ebaystatic.com' in image_url:
+                        logger.debug(f"Valid eBay image URL: {image_url}")
+                    else:
+                        logger.warning(f"Unusual eBay image URL: {image_url}")
+                        # Don't reject it, but log it for debugging
+                else:
+                    logger.debug("No image URL found for this eBay item")
             
             # Extract product URL
             link_element = element.find('a', class_='s-item__link')

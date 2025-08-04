@@ -176,13 +176,28 @@ class BotHandlers:
                         if product_card['has_image'] and product_card['image_url']:
                             # Send photo with caption
                             caption = self.item_formatter.format_telegram_caption(product_card)
-                            await update.message.reply_photo(
-                                photo=product_card['image_url'],
-                                caption=caption,
-                                parse_mode='MarkdownV2'
-                            )
+                            logger.debug(f"Attempting to send photo: {product_card['image_url']}")
+                            
+                            try:
+                                await update.message.reply_photo(
+                                    photo=product_card['image_url'],
+                                    caption=caption,
+                                    parse_mode='MarkdownV2'
+                                )
+                                logger.debug(f"Successfully sent photo for product {i}")
+                            except Exception as photo_error:
+                                logger.warning(f"Failed to send photo for product {i}: {photo_error}")
+                                logger.info(f"Falling back to text for product {i}")
+                                # Fallback to text message if photo fails
+                                product_message = self.item_formatter.format_telegram_text(product_card)
+                                await update.message.reply_text(
+                                    product_message,
+                                    parse_mode='MarkdownV2',
+                                    disable_web_page_preview=True
+                                )
                         else:
                             # Fallback to text message if no image
+                            logger.debug(f"No image for product {i}, using text format")
                             product_message = self.item_formatter.format_telegram_text(product_card)
                             await update.message.reply_text(
                                 product_message,
