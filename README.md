@@ -66,8 +66,8 @@ All configuration is handled through environment variables in the `.env` file:
 | `REQUEST_TIMEOUT` | ❌ | 10 | Request timeout in seconds |
 | `MAX_RETRY_ATTEMPTS` | ❌ | 3 | Maximum retry attempts for failed requests |
 | `DELAY_BETWEEN_REQUESTS` | ❌ | 1.0 | Delay between requests in seconds |
-| `MAX_SEARCH_RESULTS` | ❌ | 10 | Maximum search results to scrape |
-| `TOP_RESULTS_COUNT` | ❌ | 4 | Number of top results to return |
+| `MAX_SEARCH_RESULTS` | ❌ | 50 | Maximum search results to scrape |
+| `TOP_RESULTS_COUNT` | ❌ | 5 | Number of top results to return |
 | `USER_AGENT` | ❌ | Chrome UA | User agent string for web scraping |
 
 ## 🏗️ Project Structure
@@ -112,7 +112,7 @@ Simply send any product name or description to the bot:
 
 ### Bot Response
 
-For each search, the bot returns up to 4 products with:
+For each search, the bot returns up to 5 products with:
 - 📱 **Product Title** (linked to Amazon)
 - 💰 **Price** (in original currency)
 - ⭐ **Rating** (with star visualization)
