@@ -266,11 +266,11 @@ class BotHandlers:
                     "❌ Something went wrong while processing your search\\.\n\n"
                     "🔍 *Please use this format:*\n"
                     "`item name, platform` or `platform, item name`\n\n"
-                    "📱 *Supported platforms:* Amazon, eBay\n\n"
+                    "📱 *Supported platforms:* Amazon, eBay, AliExpress\n\n"
                     "*Examples:*\n"
                     "• `bluetooth speaker, amazon`\n"
                     "• `ebay, wireless headphones`\n"
-                    "• `laptop on amazon`",
+                    "• `aliexpress, gaming mouse`",
                     parse_mode='MarkdownV2'
                 )
             except:
@@ -287,11 +287,11 @@ class BotHandlers:
                     "❌ Oops\\! Something unexpected happened\\.\n\n"
                     "🔍 *Please use this format:*\n"
                     "`item name, platform` or `platform, item name`\n\n"
-                    "📱 *Supported platforms:* Amazon, eBay\n\n"
+                    "📱 *Supported platforms:* Amazon, eBay, AliExpress\n\n"
                     "*Examples:*\n"
                     "• `bluetooth speaker, amazon`\n"
                     "• `ebay, wireless headphones`\n"
-                    "• `phone case from ebay`",
+                    "• `aliexpress, phone case`",
                     parse_mode='MarkdownV2'
                 )
             except:
@@ -304,11 +304,11 @@ class BotHandlers:
                 "🤔 I don't understand that command\\.\n\n"
                 "🔍 *Please use this format:*\n"
                 "`item name, platform` or `platform, item name`\n\n"
-                "📱 *Supported platforms:* Amazon, eBay\n\n"
+                "📱 *Supported platforms:* Amazon, eBay, AliExpress\n\n"
                 "*Examples:*\n"
                 "• `bluetooth speaker, amazon`\n"
                 "• `ebay, wireless headphones`\n"
-                "• `laptop on amazon`\n\n"
+                "• `aliexpress, gaming mouse`\n\n"
                 "Or use /help for more information\\.",
                 parse_mode='MarkdownV2'
             )

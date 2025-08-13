@@ -24,7 +24,8 @@ class MessageParser:
         # Known e-commerce platforms and their variations
         self.platforms = {
             'amazon', 'amazon.com', 'amzn',
-            'ebay', 'ebay.com', 'bay'
+            'ebay', 'ebay.com', 'bay',
+            'aliexpress', 'aliexpress.com', 'ae', 'ali'
         }
         
         # Common separators
@@ -49,7 +50,7 @@ class MessageParser:
         """
         if not message or not message.strip():
             return SearchRequest(
-                error_message="Please provide a search query. Format: 'item name, platform' or 'platform, item name'"
+                error_message="Please provide a search query. Format: 'item name, platform' or 'platform, item name'\n\nSupported platforms: Amazon, eBay, AliExpress"
             )
         
         # Clean the message
@@ -72,8 +73,8 @@ class MessageParser:
                 "• `item name, platform`\n"
                 "• `platform, item name`\n"
                 "• `item name on platform`\n\n"
-                "📱 *Supported platforms:* Amazon, eBay\n\n"
-                "*Example:* `bluetooth speaker, amazon`"
+                "📱 *Supported platforms:* Amazon, eBay, AliExpress\n\n"
+                "*Example:* `aliexpress, gaming mouse`"
             )
         elif search_request.platform and not search_request.item_name:
             search_request.error_message = (
@@ -82,8 +83,8 @@ class MessageParser:
                 "• `item name, platform`\n"
                 "• `platform, item name`\n"
                 "• `item name on platform`\n\n"
-                "📱 *Supported platforms:* Amazon, eBay\n\n"
-                "*Example:* `bluetooth speaker, amazon`"
+                "📱 *Supported platforms:* Amazon, eBay, AliExpress\n\n"
+                "*Example:* `aliexpress, gaming mouse`"
             )
         else:
             search_request.error_message = (
@@ -92,8 +93,8 @@ class MessageParser:
                 "• `item name, platform`\n"
                 "• `platform, item name`\n"
                 "• `item name on platform`\n\n"
-                "📱 *Supported platforms:* Amazon, eBay\n\n"
-                "*Example:* `bluetooth speaker, amazon`"
+                "📱 *Supported platforms:* Amazon, eBay, AliExpress\n\n"
+                "*Example:* `aliexpress, gaming mouse`"
             )
         
         return search_request

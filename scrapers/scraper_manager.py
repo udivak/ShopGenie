@@ -7,18 +7,33 @@ from typing import Dict, List, Optional, Union
 from .base_scraper import BaseScraper, Product
 from .amazon_scraper import AmazonScraper
 from .ebay_scraper import EbayScraper
+from .aliexpress_scraper import AliExpressScraper
+from .aliexpress_human_scraper import AliExpressHumanScraper
 
 logger = logging.getLogger(__name__)
 
 class ScraperManager:
     """Manages multiple e-commerce scrapers."""
     
-    def __init__(self):
-        """Initialize the scraper manager with available scrapers."""
+    def __init__(self, use_human_like_scraping: bool = True):
+        """
+        Initialize the scraper manager with available scrapers.
+        
+        Args:
+            use_human_like_scraping: Whether to use human-like scraping for AliExpress
+                                   instead of API-based scraping (default: True)
+        """
+        # Choose AliExpress scraper - default to human-like since no API credentials needed
+        aliexpress_scraper = (AliExpressHumanScraper() if use_human_like_scraping 
+                             else AliExpressScraper())
+        
         self._scrapers: Dict[str, BaseScraper] = {
             'amazon': AmazonScraper(),
-            'ebay': EbayScraper()
+            'ebay': EbayScraper(),
+            'aliexpress': aliexpress_scraper
         }
+        
+        self._use_human_like_scraping = use_human_like_scraping
         
         # Aliases for common variations
         self._aliases = {
@@ -27,10 +42,15 @@ class ScraperManager:
             'amzn': 'amazon',
             'ebay.com': 'ebay',
             'ebay': 'ebay',
-            'bay': 'ebay'
+            'bay': 'ebay',
+            'aliexpress.com': 'aliexpress',
+            'aliexpress': 'aliexpress',
+            'ae': 'aliexpress',
+            'ali': 'aliexpress'
         }
         
-        logger.info(f"Initialized scraper manager with {len(self._scrapers)} scrapers")
+        scraping_mode = "human-like web scraping" if use_human_like_scraping else "API-based"
+        logger.info(f"Initialized scraper manager with {len(self._scrapers)} scrapers (AliExpress: {scraping_mode})")
     
     def get_available_platforms(self) -> List[str]:
         """Get list of available e-commerce platforms."""
@@ -121,7 +141,8 @@ class ScraperManager:
         
         display_names = {
             'amazon': 'Amazon',
-            'ebay': 'eBay'
+            'ebay': 'eBay',
+            'aliexpress': 'AliExpress'
         }
         
         return display_names.get(normalized, platform.title())
