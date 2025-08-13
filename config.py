@@ -29,11 +29,21 @@ class Config:
     # Amazon Configuration (for reference - not used by scraper)
     # Amazon scraper uses hardcoded URLs for better reliability
     
+    # AliExpress Open Platform API Configuration
+    ALIEXPRESS_APP_KEY = os.getenv('ALIEXPRESS_APP_KEY')
+    ALIEXPRESS_APP_SECRET = os.getenv('ALIEXPRESS_APP_SECRET')
+    ALIEXPRESS_TRACKING_ID = os.getenv('ALIEXPRESS_TRACKING_ID')  # Optional: for affiliate tracking
+    ALIEXPRESS_API_URL = os.getenv('ALIEXPRESS_API_URL', 'https://api-sg.aliexpress.com/sync')
+    
     @classmethod
     def validate(cls):
         """Validate that all required configuration is present."""
         if not cls.TELEGRAM_BOT_TOKEN:
             raise ValueError("TELEGRAM_BOT_TOKEN environment variable is required")
+        
+        # AliExpress API validation (optional - only if you want to use AliExpress)
+        if cls.ALIEXPRESS_APP_KEY and not cls.ALIEXPRESS_APP_SECRET:
+            raise ValueError("ALIEXPRESS_APP_SECRET is required when ALIEXPRESS_APP_KEY is set")
         
         return True
 

@@ -185,10 +185,11 @@ class MessageFormatter:
             message += "An unexpected error occurred while searching\\.\n\n"
             message += "*Please check your search format:*\n"
             message += "`item name, platform` or `platform, item name`\n\n"
-            message += "*Supported platforms:* Amazon, eBay\n\n"
+            message += "*Supported platforms:* Amazon, eBay, AliExpress\n\n"
             message += "*Examples:*\n"
             message += "• `bluetooth speaker, amazon`\n"
-            message += "• `ebay, wireless headphones`"
+            message += "• `ebay, wireless headphones`\n"
+            message += "• `aliexpress, gaming mouse`"
         
         message += "\n\n🤖 *ShopGenie Bot*"
         return message
@@ -208,12 +209,13 @@ class MessageFormatter:
         
         message += "*Supported platforms:*\n"
         message += "• Amazon\n"
-        message += "• eBay\n\n"
+        message += "• eBay\n"
+        message += "• AliExpress\n\n"
         
         message += "*Examples:*\n"
         message += "• `bluetooth speaker, amazon`\n"
         message += "• `ebay, wireless headphones`\n"
-        message += "• `laptop on amazon`\n"
+        message += "• `aliexpress, gaming mouse`\n"
         message += "• `phone case from ebay`\n\n"
         
         message += "*Commands:*\n"
@@ -235,9 +237,10 @@ class MessageFormatter:
         
         message += "*Supported platforms:*\n"
         message += "• Amazon\n"
-        message += "• eBay\n\n"
+        message += "• eBay\n"
+        message += "• AliExpress\n\n"
         
-        message += "*Example:* `bluetooth speaker, amazon`\n\n"
+        message += "*Example:* `aliexpress, gaming mouse`\n\n"
         message += "Type /help for more information\\.\n\n"
         message += "Let's start shopping\\! 🛒"
         
