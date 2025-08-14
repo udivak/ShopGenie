@@ -35,6 +35,13 @@ class Config:
     ALIEXPRESS_TRACKING_ID = os.getenv('ALIEXPRESS_TRACKING_ID')  # Optional: for affiliate tracking
     ALIEXPRESS_API_URL = os.getenv('ALIEXPRESS_API_URL', 'https://api-sg.aliexpress.com/sync')
     
+    # eBay API Configuration
+    EBAY_APP_ID = os.getenv('EBAY_APP_ID')
+    EBAY_CERT_ID = os.getenv('EBAY_CERT_ID')
+    EBAY_DEV_ID = os.getenv('EBAY_DEV_ID')
+    EBAY_ENVIRONMENT = os.getenv('EBAY_ENVIRONMENT', 'sandbox')  # sandbox or production
+    EBAY_SITE_ID = int(os.getenv('EBAY_SITE_ID', 0))  # 0 for US, 3 for UK, etc.
+    
     @classmethod
     def validate(cls):
         """Validate that all required configuration is present."""
@@ -44,6 +51,12 @@ class Config:
         # AliExpress API validation (optional - only if you want to use AliExpress)
         if cls.ALIEXPRESS_APP_KEY and not cls.ALIEXPRESS_APP_SECRET:
             raise ValueError("ALIEXPRESS_APP_SECRET is required when ALIEXPRESS_APP_KEY is set")
+        
+        # eBay API validation (optional - only if you want to use eBay)
+        if cls.EBAY_APP_ID and not cls.EBAY_CERT_ID:
+            raise ValueError("EBAY_CERT_ID is required when EBAY_APP_ID is set")
+        if cls.EBAY_APP_ID and not cls.EBAY_DEV_ID:
+            raise ValueError("EBAY_DEV_ID is required when EBAY_APP_ID is set")
         
         return True
 

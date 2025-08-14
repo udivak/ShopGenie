@@ -29,7 +29,11 @@ class PlatformStatus:
         if not success:
             status = 'error'
         elif product_count == 0:
-            status = 'limited'  # Working but returning no results (possible bot detection)
+            # For eBay API, no results is normal (not anti-bot detection)
+            if platform.lower() == 'ebay':
+                status = 'working'  # API working, just no results found
+            else:
+                status = 'limited'  # Working but returning no results (possible bot detection)
         else:
             status = 'working'
         
@@ -89,16 +93,27 @@ class PlatformStatus:
             )
         
         elif status == 'limited':
-            return (
-                f"🤖 *{platform_display} Anti\\-Bot Detection*\n\n"
-                f"It looks like {platform_display} is limiting automated searches right now\\. "
-                f"This is common when they detect bot traffic\\.\n\n"
-                f"*What you can do:*\n"
-                f"• Try a different search term\n"
-                f"• Search on Amazon instead\n"
-                f"• Try again in 10\\-15 minutes\n\n"
-                f"Amazon searches are working normally\\!"
-            )
+            if platform.lower() == 'ebay':
+                return (
+                    f"😔 *No results found for:* {search_term}\n\n"
+                    f"*Try:*\n"
+                    f"• Using different keywords\n"
+                    f"• Being more specific\n"
+                    f"• Checking spelling\n"
+                    f"• Searching on Amazon instead\n\n"
+                    f"💡 *Tip:* Amazon typically has more inventory\\!"
+                )
+            else:
+                return (
+                    f"🤖 *{platform_display} Anti\\-Bot Detection*\n\n"
+                    f"It looks like {platform_display} is limiting automated searches right now\\. "
+                    f"This is common when they detect bot traffic\\.\n\n"
+                    f"*What you can do:*\n"
+                    f"• Try a different search term\n"
+                    f"• Search on Amazon instead\n"
+                    f"• Try again in 10\\-15 minutes\n\n"
+                    f"Amazon searches are working normally\\!"
+                )
         
         else:
             # Default no results message

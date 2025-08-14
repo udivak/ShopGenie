@@ -1,43 +1,42 @@
 """
-eBay scraper implementation.
+eBay scraper implementation using eBay API.
 """
 import asyncio
-import aiohttp
-from bs4 import BeautifulSoup
-from typing import List, Optional
 import logging
-import re
-from urllib.parse import urljoin, quote
+from typing import List, Optional
+from ebaysdk.finding import Connection as FindingConnection
+from ebaysdk.exception import ConnectionError as EbayConnectionError
+from ebaysdk.trading import Connection as TradingConnection
+from ebaysdk.response import ResponseDataObject
 
 from .base_scraper import BaseScraper, Product
+from config import config
 
 logger = logging.getLogger(__name__)
 
 class EbayScraper(BaseScraper):
-    """eBay scraper implementation."""
+    """eBay scraper implementation using eBay API."""
     
     def __init__(self):
-        super().__init__(
-            base_url="https://www.ebay.com",
-            headers={
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.9',
-                'Accept-Encoding': 'gzip, deflate, br',
-                'DNT': '1',
-                'Connection': 'keep-alive',
-                'Upgrade-Insecure-Requests': '1',
-                'Sec-Fetch-Dest': 'document',
-                'Sec-Fetch-Mode': 'navigate',
-                'Sec-Fetch-Site': 'none',
-                'Sec-Fetch-User': '?1',
-                'Cache-Control': 'max-age=0'
-            }
-        )
+        super().__init__(base_url="https://www.ebay.com")
+        
+        # Validate eBay API configuration
+        if not config.EBAY_APP_ID or not config.EBAY_CERT_ID or not config.EBAY_DEV_ID:
+            logger.warning("eBay API credentials not configured. eBay scraper will be disabled.")
+            self.api_enabled = False
+        else:
+            self.api_enabled = True
+            self.app_id = config.EBAY_APP_ID
+            self.cert_id = config.EBAY_CERT_ID
+            self.dev_id = config.EBAY_DEV_ID
+            self.environment = config.EBAY_ENVIRONMENT
+            self.site_id = config.EBAY_SITE_ID
+            
+            logger.info(f"eBay API initialized with environment: {self.environment}, site_id: {self.site_id}")
     
     async def search(self, query: str, max_results: int = 50) -> List[Product]:
         """
-        Search for products on eBay.
+        Search for products on eBay using the eBay Finding API.
         
         Args:
             query: Search term
@@ -46,322 +45,175 @@ class EbayScraper(BaseScraper):
         Returns:
             List of Product objects
         """
-        try:
-            # Encode query for URL
-            encoded_query = quote(query)
-            search_url = f"{self.base_url}/sch/i.html?_nkw={encoded_query}&_sacat=0&_ipg=60"
-            
-            logger.info(f"Searching eBay for: {query}")
-            logger.debug(f"Search URL: {search_url}")
-            
-            # Add delays to avoid being flagged as bot
-            await asyncio.sleep(2.0)
-            
-            async with aiohttp.ClientSession(
-                timeout=aiohttp.ClientTimeout(total=30),
-                headers=self.headers
-            ) as session:
-                
-                for attempt in range(3):
-                    try:
-                        if attempt > 0:
-                            delay = 2.0 ** attempt  # Exponential backoff: 2s, 4s, 8s
-                            logger.info(f"Waiting {delay}s before retry...")
-                            await asyncio.sleep(delay)
-                        
-                        async with session.get(search_url) as response:
-                            if response.status == 200:
-                                html = await response.text()
-                                
-                                # Check if eBay is serving limited content
-                                if 'bot' in html.lower() or len(html) < 100000:  # Normal eBay pages are much larger
-                                    logger.warning("eBay may be serving limited content due to bot detection")
-                                
-                                products = self._parse_search_results(html, max_results)
-                                
-                                # If we get very few results, eBay might be limiting us
-                                if len(products) == 0:
-                                    logger.warning("eBay returned 0 products - possible anti-bot measures active")
-                                    
-                                return products
-                            else:
-                                logger.warning(f"HTTP {response.status} for eBay search")
-                                
-                    except asyncio.TimeoutError:
-                        logger.warning(f"eBay request timeout on attempt {attempt + 1}")
-                        if attempt == 2:
-                            logger.error("eBay is not responding - service may be temporarily unavailable")
-                            raise
-                    except Exception as e:
-                        logger.error(f"eBay error on attempt {attempt + 1}: {e}")
-                        if attempt == 2:
-                            raise
-            
+        if not self.api_enabled:
+            logger.warning("eBay API not configured. Returning empty results.")
             return []
-            
-        except Exception as e:
-            logger.error(f"Failed to search eBay: {e}")
-            return []
-    
-    def _parse_search_results(self, html: str, max_results: int) -> List[Product]:
-        """Parse search results from HTML."""
-        products = []
         
         try:
-            soup = BeautifulSoup(html, 'lxml')
+            logger.info(f"Searching eBay API for: {query}")
             
-            # eBay product selectors - try multiple patterns
-            product_elements = soup.find_all('div', class_='s-item__wrapper')
+            # Run the API call in a thread pool to avoid blocking
+            loop = asyncio.get_event_loop()
+            products = await loop.run_in_executor(
+                None, 
+                self._search_sync, 
+                query, 
+                max_results
+            )
             
-            if not product_elements:
-                # Fallback selectors in order of preference
-                selectors = [
-                    ('div', {'class': re.compile(r's-item__wrapper')}),
-                    ('div', {'class': re.compile(r's-item')}),
-                    ('div', {'data-view': 'mi:1686|iid:1'}),  # eBay item data
-                    ('div', {'class': re.compile(r'item')}),
-                    ('.s-item', None),  # CSS selector
-                ]
-                
-                for selector_tag, selector_attrs in selectors:
-                    if selector_attrs is None:
-                        # CSS selector case
-                        product_elements = soup.select(selector_tag)
-                    else:
-                        product_elements = soup.find_all(selector_tag, selector_attrs)
-                    
-                    if product_elements:
-                        logger.debug(f"Found {len(product_elements)} elements using fallback selector: {selector_tag}")
-                        break
-            
-            logger.debug(f"Found {len(product_elements)} product elements on eBay")
-            
-            for element in product_elements[:max_results]:
-                try:
-                    product = self._parse_product(element)
-                    if product:
-                        products.append(product)
-                except Exception as e:
-                    logger.debug(f"Failed to parse product element: {e}")
-                    continue
-            
-            logger.info(f"Successfully parsed {len(products)} products from eBay")
+            logger.info(f"eBay API returned {len(products)} products")
             return products
             
         except Exception as e:
-            logger.error(f"Failed to parse eBay search results: {e}")
+            logger.error(f"Failed to search eBay API: {e}")
             return []
     
-    def _parse_product(self, element) -> Optional[Product]:
-        """Parse a single product from HTML element."""
+    def _search_sync(self, query: str, max_results: int) -> List[Product]:
+        """Synchronous search using eBay Finding API."""
         try:
-            # Initialize default values
-            title = "Unknown Item"
-            price = "N/A"
-            rating = 0.0
-            sales = 0
-            image_url = ""
-            product_url = ""
+            # Create Finding API connection
+            api = FindingConnection(
+                appid=self.app_id,
+                config_file=None,
+                domain='svcs.sandbox.ebay.com' if self.environment == 'sandbox' else 'svcs.ebay.com'
+            )
             
-            # Extract title - Multiple methods for better extraction
-            title_methods = [
-                # Method 1: Standard eBay title div with span
-                lambda: element.find('div', class_='s-item__title'),
-                # Method 2: Try h3 title elements
-                lambda: element.find('h3', class_='s-item__title'),
-                # Method 3: Try any link with title or text
-                lambda: element.find('a', href=re.compile(r'/itm/')),
-                # Method 4: Try data-testid selectors
-                lambda: element.find('span', {'data-testid': 'item-title'}),
-                # Method 5: Try any element with title-like classes
-                lambda: element.find(['h1', 'h2', 'h3', 'h4'], class_=re.compile(r'title')),
-            ]
+            # Prepare search request
+            request = {
+                'keywords': query,
+                'paginationInput': {
+                    'entriesPerPage': min(max_results, 100),  # eBay API max is 100
+                    'pageNumber': 1
+                },
+                'sortOrder': 'BestMatch'  # BestMatch, CurrentPriceHighest, CurrentPriceLowest, etc.
+            }
             
-            for method in title_methods:
+            # Add site filter if specified
+            if self.site_id is not None:
+                request['siteId'] = self.site_id
+            
+            # Make API call
+            response = api.execute('findItemsByKeywords', request)
+            
+            # Parse response
+            products = self._parse_api_response(response, max_results)
+            
+            return products
+            
+        except EbayConnectionError as e:
+            logger.error(f"eBay API connection error: {e}")
+            return []
+        except Exception as e:
+            logger.error(f"eBay API error: {e}")
+            return []
+    
+    def _parse_api_response(self, response: ResponseDataObject, max_results: int) -> List[Product]:
+        """Parse eBay API response into Product objects."""
+        products = []
+        
+        try:
+            # Check if response has search results
+            response_dict = response.dict() if hasattr(response, 'dict') else {}
+            
+            if 'searchResult' not in response_dict or not response_dict['searchResult']:
+                logger.warning("No search results in eBay API response")
+                return []
+            
+            # Get items from response
+            search_result = response_dict['searchResult']
+            items = search_result.get('item', [])
+            if not items:
+                logger.info("No items found in eBay search results")
+                return []
+            
+            # Ensure items is a list
+            if not isinstance(items, list):
+                items = [items]
+            
+            logger.debug(f"Found {len(items)} items in eBay API response")
+            
+            for item in items[:max_results]:
                 try:
-                    title_element = method()
-                    if title_element:
-                        # Try different text extraction approaches
-                        text_sources = [
-                            lambda: title_element.find('span', role='heading'),
-                            lambda: title_element.find('span'),
-                            lambda: title_element.find('a'),
-                            lambda: title_element
-                        ]
-                        
-                        for source_func in text_sources:
-                            try:
-                                source_elem = source_func()
-                                if source_elem:
-                                    extracted_text = self._clean_text(source_elem.get_text())
-                                    if extracted_text and len(extracted_text) > 5:
-                                        title = extracted_text
-                                        logger.debug(f"Extracted title using method: {extracted_text}")
-                                        break
-                            except:
-                                continue
-                        
-                        if title and len(title) > 5:
-                            break
-                except:
+                    product = self._parse_api_item(item)
+                    if product:
+                        products.append(product)
+                except Exception as e:
+                    logger.debug(f"Failed to parse eBay item: {e}")
                     continue
             
-            # If still no title, try extracting from any link in the element
-            if not title or len(title) <= 5:
-                all_links = element.find_all('a', href=True)
-                for link in all_links:
-                    link_text = self._clean_text(link.get_text())
-                    if link_text and len(link_text) > 10:  # Reasonable title length
-                        title = link_text
-                        logger.debug(f"Extracted title from link: {title}")
-                        break
+            logger.info(f"Successfully parsed {len(products)} products from eBay API")
+            return products
             
-            # Clean up common eBay title prefixes/suffixes
-            if title:
-                # Remove common prefixes
-                prefixes_to_remove = ["New Listing", "SPONSORED", "Hot This Week"]
-                for prefix in prefixes_to_remove:
-                    if title.startswith(prefix):
-                        title = title[len(prefix):].strip()
-                
-                # Remove trailing text like "| eBay"
-                if "|" in title:
-                    title = title.split("|")[0].strip()
-                
-                # Remove "Shop on eBay" suffix
-                if title.endswith("Shop on eBay"):
-                    title = title[:-12].strip()
+        except Exception as e:
+            logger.error(f"Failed to parse eBay API response: {e}")
+            return []
+    
+    def _parse_api_item(self, item: dict) -> Optional[Product]:
+        """Parse a single item from eBay API response."""
+        try:
+            # Extract basic information
+            title = item.get('title', 'Unknown Item')
+            item_id = item.get('itemId', '')
             
-            # Extract price
-            price_element = element.find('span', class_='s-item__price')
-            if price_element:
-                price = self._clean_text(price_element.get_text())
-                # Clean up price format
-                if 'to' in price.lower():
-                    # Handle price ranges - take the lower price
-                    price_parts = price.split('to')
-                    if len(price_parts) > 0:
-                        price = price_parts[0].strip()
-                # Remove shipping info
-                if '+' in price:
-                    price = price.split('+')[0].strip()
+            # Extract price information
+            price = "N/A"
+            if 'sellingStatus' in item and 'currentPrice' in item['sellingStatus']:
+                current_price = item['sellingStatus']['currentPrice']
+                price_value = current_price.get('value', current_price.get('__value__', 'N/A'))
+                price_currency = current_price.get('currencyId', current_price.get('@currencyId', 'USD'))
+                price = f"{price_currency} {price_value}"
             
-            # Extract rating (eBay uses different format)
-            # Look for feedback score or seller rating
-            rating_element = element.find('span', class_='s-item__reviews-count')
-            if rating_element:
-                rating_text = rating_element.get_text()
-                # Extract number from text like "(123)" or "123 sold"
-                rating_match = re.search(r'(\d+)', rating_text)
-                if rating_match:
-                    # Convert review count to a 1-5 rating scale
-                    review_count = int(rating_match.group(1))
-                    if review_count > 100:
-                        rating = 5.0
-                    elif review_count > 50:
-                        rating = 4.5
-                    elif review_count > 20:
-                        rating = 4.0
-                    elif review_count > 10:
-                        rating = 3.5
-                    elif review_count > 5:
-                        rating = 3.0
-                    else:
-                        rating = 2.5
-            
-            # Extract sales count
-            sold_element = element.find('span', class_='s-item__dynamic')
-            if sold_element:
-                sold_text = sold_element.get_text()
-                sales_match = re.search(r'(\d+)\s*sold', sold_text)
-                if sales_match:
-                    sales = int(sales_match.group(1))
-            
-            # Extract image URL - Multiple methods for better image extraction
-            img_element = element.find('img', class_='s-item__image')
-            if img_element:
-                # Try different image attributes in order of preference
-                image_url = (
-                    img_element.get('src') or 
-                    img_element.get('data-src') or 
-                    img_element.get('data-original') or
-                    img_element.get('data-lazy')
-                )
-                
-                # If still no image, try alternative selectors
-                if not image_url:
-                    alt_img_selectors = [
-                        '.s-item__image img',
-                        '.s-item__link img',
-                        'img[src*="ebayimg"]',
-                        'img[data-src*="ebayimg"]',
-                        '.s-item__wrapper img'
-                    ]
-                    for selector in alt_img_selectors:
-                        alt_img = element.select_one(selector)
-                        if alt_img:
-                            image_url = (
-                                alt_img.get('src') or 
-                                alt_img.get('data-src') or 
-                                alt_img.get('data-original') or
-                                alt_img.get('data-lazy')
-                            )
-                            if image_url:
-                                break
-                
-                # Clean up and validate image URL
-                if image_url:
-                    logger.debug(f"Raw image URL found: {image_url}")
-                    
-                    # Remove any query parameters that might cause issues
-                    if '?' in image_url:
-                        image_url = image_url.split('?')[0]
-                    
-                    # Ensure proper URL format
-                    if not image_url.startswith('http'):
-                        image_url = urljoin(self.base_url, image_url)
-                    
-                    # Replace small images with larger ones if possible
-                    if 's-l' in image_url:
-                        # Try to get larger image by replacing size parameter
-                        image_url = image_url.replace('s-l64', 's-l300').replace('s-l140', 's-l300')
-                    
-                    # Ensure we have a valid eBay image URL
-                    if 'ebayimg.com' in image_url or 'ebaystatic.com' in image_url:
-                        logger.debug(f"Valid eBay image URL: {image_url}")
-                    else:
-                        logger.warning(f"Unusual eBay image URL: {image_url}")
-                        # Don't reject it, but log it for debugging
+            # Extract rating (eBay doesn't provide direct ratings in Finding API)
+            # We'll use seller feedback score as a proxy
+            rating = 0.0
+            if 'sellerInfo' in item and 'feedbackScore' in item['sellerInfo']:
+                feedback_score = int(item['sellerInfo']['feedbackScore'])
+                # Convert feedback score to rating (1-5 scale)
+                if feedback_score > 10000:
+                    rating = 5.0
+                elif feedback_score > 5000:
+                    rating = 4.5
+                elif feedback_score > 1000:
+                    rating = 4.0
+                elif feedback_score > 500:
+                    rating = 3.5
+                elif feedback_score > 100:
+                    rating = 3.0
+                elif feedback_score > 50:
+                    rating = 2.5
                 else:
-                    logger.debug("No image URL found for this eBay item")
+                    rating = 2.0
+            
+            # Extract sales count (not directly available in Finding API)
+            sales = 0
+            
+            # Extract image URL
+            image_url = ""
+            if 'pictureURLLarge' in item:
+                image_url = item['pictureURLLarge']
+            elif 'galleryURL' in item:
+                image_url = item['galleryURL']
             
             # Extract product URL
-            link_element = element.find('a', class_='s-item__link')
-            if link_element:
-                product_url = link_element.get('href')
-                if product_url and not product_url.startswith('http'):
-                    product_url = urljoin(self.base_url, product_url)
+            product_url = ""
+            if 'viewItemURL' in item:
+                product_url = item['viewItemURL']
             
-            # Filter out non-product elements and validate essential data
+            # Extract additional information
+            condition = item.get('condition', {}).get('conditionDisplayName', 'Unknown')
+            location = item.get('location', 'Unknown')
+            
+            # Get seller information
+            seller_name = ""
+            if 'sellerInfo' in item:
+                seller_name = item['sellerInfo'].get('sellerUserName', '')
+            
+            # Filter out invalid items
             if not title or title == "Unknown Item" or len(title) < 5:
-                logger.debug(f"Rejected product: invalid title - '{title}'")
+                logger.debug(f"Rejected eBay item: invalid title - '{title}'")
                 return None
             
-            # Filter out eBay promotional/ad elements
-            ad_patterns = [
-                "Shop on eBay",
-                "Browse categories",
-                "Sponsored",
-                "Advertisement",
-                "See more like this",
-                "Trending at",
-                "Related searches"
-            ]
-            
-            if any(pattern.lower() in title.lower() for pattern in ad_patterns):
-                logger.debug(f"Rejected product: appears to be ad/promo - '{title}'")
-                return None
-            
+            # Create Product object
             return Product(
                 title=title,
                 price=price,
@@ -373,5 +225,117 @@ class EbayScraper(BaseScraper):
             )
             
         except Exception as e:
-            logger.debug(f"Failed to parse eBay product: {e}")
+            logger.debug(f"Failed to parse eBay API item: {e}")
             return None
+    
+    async def get_item_details(self, item_id: str) -> Optional[dict]:
+        """
+        Get detailed information about a specific eBay item using Trading API.
+        
+        Args:
+            item_id: eBay item ID
+            
+        Returns:
+            Dictionary with item details or None if failed
+        """
+        if not self.api_enabled:
+            logger.warning("eBay API not configured. Cannot get item details.")
+            return None
+        
+        try:
+            logger.info(f"Getting eBay item details for: {item_id}")
+            
+            # Run the API call in a thread pool to avoid blocking
+            loop = asyncio.get_event_loop()
+            details = await loop.run_in_executor(
+                None, 
+                self._get_item_details_sync, 
+                item_id
+            )
+            
+            return details
+            
+        except Exception as e:
+            logger.error(f"Failed to get eBay item details: {e}")
+            return None
+    
+    def _get_item_details_sync(self, item_id: str) -> Optional[dict]:
+        """Synchronous call to get item details using eBay Trading API."""
+        try:
+            # Create Trading API connection
+            api = TradingConnection(
+                appid=self.app_id,
+                devid=self.dev_id,
+                certid=self.cert_id,
+                config_file=None,
+                domain=f'api.{self.environment}.ebay.com'
+            )
+            
+            # Prepare request
+            request = {
+                'ItemID': item_id,
+                'DetailLevel': 'ReturnAll'
+            }
+            
+            # Make API call
+            response = api.execute('GetItem', request)
+            
+            # Extract relevant information
+            item = response.dict()['Item']
+            
+            details = {
+                'title': item.get('Title', ''),
+                'description': item.get('Description', ''),
+                'price': item.get('StartPrice', {}).get('value', 'N/A'),
+                'currency': item.get('StartPrice', {}).get('currencyID', 'USD'),
+                'condition': item.get('ConditionDisplayName', 'Unknown'),
+                'location': item.get('Location', 'Unknown'),
+                'seller': item.get('Seller', {}).get('UserID', ''),
+                'listing_type': item.get('ListingType', ''),
+                'end_time': item.get('EndTime', ''),
+                'primary_category': item.get('PrimaryCategory', {}).get('CategoryName', ''),
+                'pictures': [],
+                'shipping_info': {}
+            }
+            
+            # Extract pictures
+            if 'PictureDetails' in item and 'PictureURL' in item['PictureDetails']:
+                pictures = item['PictureDetails']['PictureURL']
+                if isinstance(pictures, list):
+                    details['pictures'] = pictures
+                else:
+                    details['pictures'] = [pictures]
+            
+            # Extract shipping information
+            if 'ShippingDetails' in item:
+                shipping = item['ShippingDetails']
+                details['shipping_info'] = {
+                    'type': shipping.get('ShippingType', ''),
+                    'service': shipping.get('ShippingServiceOptions', {}).get('ShippingServiceName', ''),
+                    'cost': shipping.get('ShippingServiceOptions', {}).get('ShippingServiceCost', {}).get('value', 'N/A')
+                }
+            
+            return details
+            
+        except EbayConnectionError as e:
+            logger.error(f"eBay Trading API connection error: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"eBay Trading API error: {e}")
+            return None
+    
+    def _parse_product(self, element) -> Optional[Product]:
+        """
+        Parse a single product element from HTML (for compatibility with BaseScraper).
+        This method is not used in the API-based implementation but required by the abstract base class.
+        
+        Args:
+            element: HTML element containing product data (not used in API implementation)
+            
+        Returns:
+            None (this method is not used in API-based scraping)
+        """
+        # This method is not used in the API-based implementation
+        # It's only here to satisfy the abstract base class requirement
+        logger.warning("_parse_product called on API-based eBay scraper - this method is not used")
+        return None

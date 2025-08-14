@@ -6,6 +6,7 @@ A sophisticated Telegram bot that searches multiple e-commerce platforms (Amazon
 
 - 🛒 **Multi-Platform Support**: Search both Amazon and eBay with a single bot
 - 🔍 **Smart Product Search**: Advanced web scraping with platform-specific optimizations
+- 🛠️ **eBay API Integration**: Official eBay API support for reliable, fast searches (optional)
 - 💬 **Flexible Input Parsing**: Multiple search formats (`item, platform` or `platform, item` or `item on platform`)
 - 🏆 **Intelligent Ranking**: Multi-factor scoring system based on price, rating, and sales
 - 📱 **Rich Formatting**: Beautiful Telegram messages with markdown formatting and product photos
@@ -82,19 +83,75 @@ A sophisticated Telegram bot that searches multiple e-commerce platforms (Amazon
 4. Copy the token provided by BotFather
 5. Add the token to your `.env` file
 
+### Setting Up eBay API (Optional but Recommended)
+
+To get the best eBay search results, set up eBay developer credentials:
+
+1. **Create an eBay Developer Account:**
+   - Go to [eBay Developer Program](https://developer.ebay.com/)
+   - Sign up for a developer account
+   - Create a new application
+
+2. **Get Your Credentials:**
+   - Note down your **App ID**, **Cert ID**, and **Dev ID**
+   - These will be provided in your eBay developer dashboard
+
+3. **Configure Environment:**
+   - Add the credentials to your `.env` file:
+   ```
+   EBAY_APP_ID=your_app_id_here
+   EBAY_CERT_ID=your_cert_id_here
+   EBAY_DEV_ID=your_dev_id_here
+   EBAY_ENVIRONMENT=sandbox  # or production
+   EBAY_SITE_ID=0  # 0 for US, 3 for UK, etc.
+   ```
+
+4. **Test the Setup:**
+   ```bash
+   python test_ebay_api.py
+   ```
+
+**Benefits of eBay API:**
+- ✅ More reliable and faster searches
+- ✅ Better structured data
+- ✅ No anti-bot detection issues
+- ✅ Access to detailed product information
+- ✅ Higher rate limits
+
 ## 📋 Configuration Options
 
 All configuration is handled through environment variables in the `.env` file:
 
+### Required Configuration
+
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `TELEGRAM_BOT_TOKEN` | ✅ | - | Your Telegram bot token |
+
+### Optional Configuration
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
 | `REQUEST_TIMEOUT` | ❌ | 10 | Request timeout in seconds |
 | `MAX_RETRY_ATTEMPTS` | ❌ | 3 | Maximum retry attempts for failed requests |
 | `DELAY_BETWEEN_REQUESTS` | ❌ | 1.0 | Delay between requests in seconds |
 | `MAX_SEARCH_RESULTS` | ❌ | 50 | Maximum search results to scrape |
 | `TOP_RESULTS_COUNT` | ❌ | 5 | Number of top results to return |
 | `USER_AGENT` | ❌ | Chrome UA | User agent string for web scraping |
+
+### eBay API Configuration (Optional)
+
+To enable eBay API-based searching (recommended), you need to set up eBay developer credentials:
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `EBAY_APP_ID` | ❌ | - | Your eBay application ID |
+| `EBAY_CERT_ID` | ❌ | - | Your eBay certificate ID |
+| `EBAY_DEV_ID` | ❌ | - | Your eBay developer ID |
+| `EBAY_ENVIRONMENT` | ❌ | sandbox | API environment (sandbox/production) |
+| `EBAY_SITE_ID` | ❌ | 0 | eBay site ID (0=US, 3=UK, etc.) |
+
+**Note:** If eBay API credentials are not provided, the bot will fall back to web scraping for eBay searches.
 
 ## 🏗️ Project Structure
 
